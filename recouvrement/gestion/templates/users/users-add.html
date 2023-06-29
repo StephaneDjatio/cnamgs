@@ -1,0 +1,64 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Créer nouvel utilisateur</h5>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        <form method="POST">
+          {% if message %}
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            Data submitted successfully
+          </div>
+          {% endif %}
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-primary">Soumettre</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+  var locationInputsState = false;
+    function addLocation() {
+      if (!locationInputsState) {
+        locationInputsState = true;
+        var icon_remove = `<i class="fa-solid fa-minus"></i>`
+        var location_input = `<div class="mb-3">
+            <label for="latitude" class="form-label">Latitude</label>
+            <input type="number" class="form-control" id="latitude" name="latitude" step="any" required>
+          </div>
+          <div class="mb-3">
+            <label for="longitude" class="form-label">Longitude</label>
+            <input type="number" class="form-control" id="longitude" name="longitude" step="any" required>
+          </div>`;
+
+        document.getElementById("icon_right").innerHTML = icon_remove
+        document.getElementById("locationInputs").innerHTML = location_input
+      } else {
+      locationInputsState = false;
+        var icon_add = `<i class="fa-solid fa-plus"></i>`
+        document.getElementById("icon_right").innerHTML = icon_add
+        document.getElementById("locationInputs").innerHTML = ""
+      }
+    }
+</script>
+{% endblock scripts %}
+

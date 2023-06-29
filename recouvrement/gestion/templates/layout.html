@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+{% load django_bootstrap5 %}
+<head>
+  <meta charset="UTF-8">
+  <title>Contributions collections</title>
+  {% bootstrap_css %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
+  <link rel="stylesheet" href="{% static 'assets/leaflet/leaflet.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/DataTables/datatables.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/fontawesome6.4/css/all.min.css' %}">
+</head>
+<body>
+<!--Main Navigation-->
+<header>
+  <!-- Sidebar -->
+  <nav id="sidebarMenu" class="collapse d-lg-block sidebar collapse bg-white">
+    <div class="position-sticky">
+      <div class="list-group list-group-flush mx-3 mt-4">
+        <!-- Collapse 1 -->
+        <a class="list-group-item list-group-item-action py-2 ripple" aria-current="true"
+           data-mdb-toggle="collapse" href="#collapseExample1" aria-expanded="true"
+           aria-controls="collapseExample1">
+          <i class="fas fa-tachometer-alt fa-fw me-3"></i><span>Menu</span>
+        </a>
+        <!-- Collapsed content -->
+        <ul id="collapseExample1" class="collapse show list-group list-group-flush">
+          <li class="list-group-item py-1">
+            <a href="/map" class="text-reset">Carte</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/companies" class="text-reset">Entreprises</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/agents" class="text-reset {% if request.user.role == 'ACCOUNTANT' %}disabled-link{% endif %}">Agents</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/missions" class="text-reset {% if request.user.role == 'ACCOUNTANT' %}disabled-link{% endif %}">Missions</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/payments" class="text-reset {% if request.user.role != 'ACCOUNTANT' %}disabled-link{% endif %}">Paiements</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/inspections" class="text-reset">Contrôles</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/users" class="text-reset {% if request.user.role == 'ACCOUNTANT' %}disabled-link{% endif %}">Comptes utilisateurs</a>
+          </li>
+          <li class="list-group-item py-1">
+            <a href="/reports" class="text-reset">Rapports</a>
+          </li>
+        </ul>
+        <!-- Collapse 1 -->
+      </div>
+    </div>
+  </nav>
+  <!-- Sidebar -->
+
+  <!-- Navbar -->
+  <nav id="main-navbar" class="navbar navbar-expand-lg navbar-light bg-primary fixed-top">
+    <!-- Container wrapper -->
+    <div class="container-fluid">
+      <!-- Toggle button -->
+      <button class="navbar-toggler" type="button" data-mdb-toggle="collapse" data-mdb-target="#sidebarMenu"
+              aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <!-- Brand -->
+      <a class="navbar-brand" href="#">
+        <img src="{% static 'assets/img/cnamgs.jpeg' %}" height="40" alt="CNAMGS Logo"
+             loading="lazy" />
+      </a>
+
+      <!-- Right links -->
+      <div class=" collapse navbar-collapse" id="navbarNavDropdown">
+        <ul class="navbar-nav ms-auto ">
+          <li class="nav-item dropdown">
+            <a class="nav-link mx-2 dropdown-toggle text-white" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ request.user.first_name }} {{ request.user.last_name }} ({{ request.user.role }})
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <li><a class="dropdown-item" href="#">Profil utilisateur</a></li>
+              <li><a class="dropdown-item" href="#">Modifier mot de passe</a></li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link mx-2 btn btn-danger btn-sm text-white" href="/logout">Déconnexion</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- Container wrapper -->
+  </nav>
+  <!-- Navbar -->
+</header>
+<!--Main Navigation-->
+
+
+<main style="margin-top: 58px;">
+  {% block content %}
+
+  {% endblock content %}
+</main>
+
+
+<!-- Modal update company -->
+<div class="modal fade" id="companyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="companyModalLabel">Editer les donneés d'une entreprise</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="update_company/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="text" class="form-control" id="id_comp" name="id_company" hidden readonly required>
+          <div class="mb-3">
+            <label for="company_name" class="form-label">Nom de l'entreprise</label>
+            <input type="text" class="form-control" id="company_name" name="company_name" required>
+          </div>
+          <div class="mb-3">
+            <label for="sector_name" class="form-label">Secteur d'activité</label>
+            <select class="form-select" id="sector_name" name="sector_name" required>
+              <option value="">Choisir secteur d'activité</option>
+
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="city_name" class="form-label">Ville</label>
+            <select class="form-select" id="city_name" name="city_name" required>
+              <option value="">Choisir une ville</option>
+
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal update marker -->
+<div class="modal fade" id="localizationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Sauvegarder la localisation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="updateLocalization/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="text" class="form-control" id="id_company" name="id_company" hidden readonly required>
+          <div class="mb-3">
+            <label for="latitude" class="form-label">Latitude</label>
+            <input type="number" class="form-control" id="latitude" name="latitude" step="any" required>
+          </div>
+          <div class="mb-3">
+            <label for="longitude" class="form-label">Longitude</label>
+            <input type="number" class="form-control" id="longitude" name="longitude" step="any" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal add and update contribution -->
+<div class="modal fade" id="contributionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="contributionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="contributionModalLabel">Cotisations</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="text" class="form-control" id="contrib_comp_id" name="id_company" hidden readonly required>
+          <div class="mb-3">
+            <label for="latitude" class="form-label">Nom de l'entreprise</label>
+            <input type="text" class="form-control" id="company_name1" name="company_name" readonly required>
+          </div>
+          <div class="mb-3">
+            <label for="trimester_id" class="form-label">Trimestre</label>
+            <select class="form-select" id="trimester_id" name="trimester_id" required>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="latitude" class="form-label">Montant</label>
+            <input type="number" class="form-control" id="amount" name="amount" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal delete company -->
+<div class="modal fade" id="deleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Supprimer une entreprise</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="delete/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="text" class="form-control" id="id_compan" name="id_company" hidden readonly required>
+          <p class="text-danger">Voulez-vous supprimer cette entreprise?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Confirmer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal update Agent -->
+<div class="modal fade" id="agentModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="agentModalLabel">Editer les donneés d'un agent</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="update_agent/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="text" class="form-control" id="id_agent" name="id_agent" hidden readonly required>
+          <div class="mb-3">
+            <label for="firstname" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="firstname" name="firstname" required>
+          </div>
+          <div class="mb-3">
+            <label for="lastname" class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="lastname" name="lastname">
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="text" class="form-control" id="email" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label for="phone_number" class="form-label">Numéro de téléphone</label>
+            <input type="text" class="form-control" id="phone_number" name="phone_number" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+{% bootstrap_javascript %}
+<script src="{% static 'assets/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'assets/DataTables/datatables.js' %}"></script>
+<script src="{% static 'assets/fontawesome6.4/js/all.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+<script>
+  function convertAmountToCurrency(amount) {
+    return new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(amount);
+  }
+
+  function parseLocaleNumber(stringNumber, locale) {
+    var thousandSeparator = Intl.NumberFormat(locale).format(11111).replace(/\p{Number}/gu, '');
+    var decimalSeparator = Intl.NumberFormat(locale).format(1.1).replace(/\p{Number}/gu, '');
+
+    return parseFloat(stringNumber
+        .replace(new RegExp('\\' + thousandSeparator, 'g'), '')
+        .replace(new RegExp('\\' + decimalSeparator), '.')
+    );
+  }
+</script>
+{% block scripts %}
+
+{% endblock scripts %}
+</body>
+</html>

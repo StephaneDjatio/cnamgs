@@ -1,0 +1,139 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="card">
+        <div class="card-body">
+            <div>
+                <h5 class="card-title float-start">Liste des entreprises</h5>
+                <a href="/company/add" class="btn btn-primary btn-sm float-end">
+                    <span class="fa-solid fa-edit"> </span> Nouvelle entreprise
+                </a>
+            </div>
+            <br>
+            <hr>
+            <br>
+            <div>
+                {% for message in messages %}
+                <div class="container-fluid p-0">
+                    <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+                        {{ message }}
+                    </div>
+                </div>
+                {% endfor %}
+                <table id="companyTable" class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th>Nom de l'entreprise</th>
+                        <th>secteur d'activité</th>
+                        <th>Ville</th>
+                        <th>Date de creation</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        {% for company in companies %}
+                            <tr>
+                                <td>{{ company.company_name }}</td>
+                                <td>{{ company.sector.sector_name }}</td>
+                                <td>{{ company.city.city_name }}</td>
+                                <td>{{ company.create_on }}</td>
+                                <td>
+                                    <div class="btn-group" role="group" aria-label="Basic example">
+                                        <a href="#" class="btn btn-primary btn-sm updateCompany" data-id={{company.id}} title="Edit Company"><span class="fa-solid fa-edit"></span></a>
+                                        <a href="#" class="btn btn-success btn-sm updateMarker" data-id="{{company.id}}" title="Update localization"><span class="fa-solid fa-map-marker"></span></a>
+                                        <a href="/companies/contributions/{{company.id}}" class="btn btn-secondary btn-sm listContributions" data-id="{{company.id}}" title="List contribution"><span class="fa-solid fa-table"></span></a>
+                                        <a href="#" class="btn btn-danger btn-sm deleteCompany" data-id="{{company.id}}" title="Delete company"><span class="fa-solid fa-trash"></span></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+    var table = new DataTable('#companyTable');
+    $(document).ready(function(){
+
+        $('.updateMarker').click(function(){
+            company_id = $(this).data("id")
+            // AJAX request
+             $.ajax({
+                   url: '{% url "get_company_location" %}',
+                   type: 'get',
+                   data:{company_id:company_id},
+                   dataType: 'json',
+                   success: function(response){
+                        //console.log(response)
+                        if(response.data.length != 0) {
+                            $('.modal-body #latitude').val(response.data[0].latitude);
+                            $('.modal-body #longitude').val(response.data[0].longitude);
+                        }else {
+                            $('.modal-body #latitude').val('');
+                            $('.modal-body #longitude').val('');
+                        }
+                        $('.modal-body #id_company').val(company_id);
+                        $('#localizationModal').modal('show');
+                   }
+             });
+
+        })
+
+        $('.updateCompany').click(function(){
+             company_id = $(this).data("id")
+             // AJAX request
+             $.ajax({
+                   url: '{% url "edit_company" %}',
+                   type: 'get',
+                   data:{company_id:company_id},
+                   dataType: 'json',
+                   success: function(response){
+                        //console.log(response)
+                        var cities;
+                        var sectors;
+                        $.each(response.cities, function(index, value) {
+                          if(value.id == response.company[0].city_id){
+                            cities += "<option value='"+value.id+"' selected>"+value.city_name+"</option>"
+                          }else {
+                            cities += "<option value='"+value.id+"'>"+value.city_name+"</option>"
+                          }
+                        });
+                        $.each(response.sectors, function(index, value) {
+                          if(value.id == response.company[0].sector_id){
+                            sectors += "<option value='"+value.id+"' selected>"+value.sector_name+"</option>"
+                          }else {
+                            sectors += "<option value='"+value.id+"'>"+value.sector_name+"</option>"
+                          }
+                        });
+                        $('.modal-body #id_comp').val(company_id);
+                        $('.modal-body #company_name').val(response.company[0].company_name);
+                        $('.modal-body #city_name').html(cities);
+                        $('.modal-body #sector_name').html(sectors);
+                        $('#companyModal').modal('show');
+                   }
+             });
+        });
+
+        $('.deleteCompany').click(function(){
+            company_id = $(this).data("id")
+            $('.modal-body #id_compan').val(company_id);
+            $('#deleteModal').modal('show');
+        })
+    });
+</script>
+{% endblock scripts %}
+

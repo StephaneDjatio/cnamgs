@@ -1,0 +1,91 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title">Detail de paiement</h5>
+        <h5 class="card-title">Company: {{ company }}</h5>
+        <h5 class="card-title">Trimester: {{ trimester }}</h5>
+      </div>
+      <hr>
+      <br>
+      <div>
+        {% for message in messages %}
+        <div class="container-fluid p-0">
+          <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+            {{ message }}
+          </div>
+        </div>
+        {% endfor %}
+        <table id="agentTable" class="table table-bordered">
+          <thead>
+          <tr>
+            <th width="25%">Code de paiement</th>
+            <th width="25%">Date de paiement</th>
+            <th width="20%">Montant versé</th>
+            <th width="20%">Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+            {% for payment in payments %}
+            <tr>
+              <td>{{ payment.payment_number }}</td>
+              <td>{{ payment.payment_date }}</td>
+              <td>{{ payment.payment_amount }}</td>
+              <td>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                  <a href="#" class="btn btn-primary btn-sm detailPayment"
+                     data-company_id={{payment.company_id}} data-trimester_id={{payment.trimester_id}}
+                     title="Edit payment"><span class="fa-solid fa-edit"> </span> Edit</a>
+                  <a href="#" class="btn btn-danger btn-sm deletePayment"
+                     data-company_id={{payment.company_id}} data-trimester_id={{payment.trimester_id}}
+                     title="Edit payment"><span class="fa-solid fa-trash"> </span> Delete</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#agentTable',{
+            responsive: true
+        });
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

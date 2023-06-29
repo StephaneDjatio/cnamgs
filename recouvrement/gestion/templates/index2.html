@@ -1,0 +1,339 @@
+{% extends 'layout.html' %}
+
+
+{% block content %}
+    <div class="container-fluid">
+        <div id="mymap">
+            <!-- year select options -->
+            <div id="year-select-div">
+                <div class="row container-fluid">
+                    <div class="col-3">
+                        <label>Secteur d'activité</label>
+                        <select id="search_sector_select" class="search-select round">
+                            <option value="all">Tout</option>
+                            {% for sector in sectors %}
+                            <option value="{{sector.id}}">{{sector.sector_name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <label>Choisir une entreprise</label>
+                        <select id="search_company_select" class="search-select round">
+                            <option value="all">Tout</option>
+                            {% for company in companies %}
+                            <option value="{{company.id}}">{{company.company_name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <label>Choisir une année</label><br>
+                        <select id="search_year_select" class="search-select round">
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <label>Choisir un trimestre</label>
+                        <select id="search_trimester_select" class="search-select round">
+
+                        </select>
+                    </div>
+
+                </div>
+
+
+
+
+            </div>
+
+        </div>
+
+    </div>
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+    <script type="text/javascript">
+
+        // basemaps
+        let osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+        let osmTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        });
+
+        // Map initialization
+        let map = L.map('mymap', {
+            layers:[osm]
+        }).setView([0.416198, 9.467268], 10);
+
+        // Add map scale
+        L.control.scale({
+            position: 'bottomright'
+        }).addTo(map)
+
+        // Add companies localizations
+        let companyMarkerGroup = L.featureGroup()
+        let markers =[]
+        let marker_object = {}
+        let year = document.getElementById('search_year_select').value
+        {% for localization in localizations %}
+            var lat = {{localization.latitude}}
+            var lng = {{localization.longitude}}
+            company_name = '{{localization.company.company_name}}'
+            sector_name = '{{localization.company.sector.sector_name}}'
+            var marker = L.marker([lat,lng]).bindPopup(
+                '<h6>'+company_name+'</h6>'+
+                'Sector of activity: '+sector_name+'<br>'+
+                'Year: '+year+'<br>'+
+                'Trimester:<br>'+
+                'Contribution:<br>'+
+                'Total payment:'
+            )
+            marker_object = {
+                company_id: {{localization.company.id}},
+                company_marker: marker
+            }
+            markers.push(marker_object)
+            marker.addTo(companyMarkerGroup)
+        {% endfor %}
+        companyMarkerGroup.addTo(map)
+
+        let greenIcon = new L.Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        });
+        let blueIcon = new L.Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        });
+        let redIcon = new L.Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        });
+    </script>
+
+    <script type="text/javascript">
+
+        let search_company_select = document.getElementById("search_company_select")
+        let search_trimester = document.getElementById("search_trimester_select")
+        let search_year_select = document.getElementById("search_year_select")
+
+        let currentYear = new Date().getFullYear()
+        let earliestYear = 2020
+
+        while (currentYear >= earliestYear) {
+            let dateOption = document.createElement("option")
+            dateOption.text = currentYear
+            dateOption.value = currentYear
+            search_year_select.add(dateOption)
+            currentYear -= 1
+        }
+
+        currentYear = new Date().getFullYear()
+
+        initTrimesterSelect(currentYear)
+
+        function initTrimesterSelect(year_value) {
+            const month = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
+            $.ajax({
+                type: "GET",
+                url: "{% url 'getTrimesters' %}",
+                dataType: "json",
+                data: {year_value:year_value},
+                success: function(response) {
+                    //console.log(response)
+                    let search_trimester_select = document.getElementById("search_trimester_select")
+                    if(response.trimesters.length != 0){
+                        let content = "<option value='all'>Tout</option>"
+                        $.each(response.trimesters, function(key, value) {
+                            var begin_date = new Date(value.trimester_begin)
+                            begin_date = begin_date.getDate() + ' ' + month[begin_date.getMonth()] + ' ' + begin_date.getFullYear();
+                            var end_date = new Date(value.trimester_end)
+                            end_date = end_date.getDate() + ' ' + month[end_date.getMonth()] + ' ' + end_date.getFullYear();
+
+                           content += `<option value=${value.id}>${begin_date} to ${end_date}</option>`
+                        })
+                        search_trimester_select.innerHTML = content
+                        $.each(markers, function(key, value) {
+                            updateCompanyMarkerPerYear(value, year_value)
+                        })
+                    }else {
+                        search_trimester_select.innerHTML = `<option value="">Pas de trimestre défini</option>`
+                    }
+                },
+                error: function(response) {
+
+                }
+            })
+        }
+
+        function updateCompanyMarkerPerYear(marker_object, year) {
+            let text_trimester= search_trimester.options[search_trimester.selectedIndex].text;
+            let trimester_id = search_trimester.value
+            $.ajax({
+                type: "GET",
+                url: "{% url 'getCompany' %}",
+                dataType: "json",
+                data: {company_id:marker_object.company_id, year_value:year, trimester_id: trimester_id},
+                success: function(response) {
+                    //console.log(response)
+                    let total_dues = 0
+                    let total_contributions = 0
+
+                    // Get total of dues paid by company per year
+                    $.each(response.payments, function(key, value) {
+                        total_dues += value[0]
+                    })
+                    $.each(response.contributions, function(key, value) {
+                        total_contributions += value[0]
+                    })
+
+                    // Change marker color
+                    if(total_contributions == 0 || total_dues == 0) {
+                        marker_object.company_marker.setIcon(redIcon)
+                    }else if(total_contributions == total_dues) {
+                        marker_object.company_marker.setIcon(greenIcon)
+                    } else {
+                        marker_object.company_marker.setIcon(blueIcon)
+                    }
+
+                    // change amount to currency format (XAF for FCFA)
+                    total_dues = new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(total_dues);
+                    total_contributions = new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(total_contributions);
+
+                    // Set new marker popup content
+                    marker_object.company_marker._popup.setContent(
+                        `<h6>${response.company[0].company_name}</h6>
+                         Secteur d'activité: <b>${response.sector[0].sector_name}</b><br><br>
+                         Année: <b>${year}</b><br><br>
+                         Trimestre: <b>${text_trimester}</b><br><br>
+                         Cotisations: <b>${total_contributions}</b><br><br>
+                         Paiement: <b>${total_dues}</b>`
+                    )
+                },
+                error: function(response) {
+                    console.log(response)
+                }
+            })
+        }
+
+        function updateCompanyMarkerPerTrimester(marker_object) {
+            let text_trimester= search_trimester.options[search_trimester.selectedIndex].text;
+            let year = search_year_select.value
+            let trimester_id = search_trimester.value
+            $.ajax({
+                type: "GET",
+                url: "{% url 'getCompany' %}",
+                dataType: "json",
+                data: {company_id:marker_object.company_id, year_value:year, trimester_id: trimester_id},
+                success: function(response) {
+                    //console.log(response)
+                    let total_dues = 0
+                    let total_contributions = 0
+
+                    // Get total of dues paid by company in the trimester
+                    $.each(response.payments, function(key, value) {
+                        total_dues += value[0]
+                    })
+
+                    // Get total of contributions to be paid by company in the trimester
+                    $.each(response.contributions, function(key, value) {
+                        total_contributions += value[0]
+                    })
+
+                    // Change marker color
+                    if(total_contributions == 0 || total_dues == 0) {
+                        marker_object.company_marker.setIcon(redIcon)
+                    }else if(total_contributions == total_dues) {
+                        marker_object.company_marker.setIcon(greenIcon)
+                    } else {
+                        marker_object.company_marker.setIcon(blueIcon)
+                    }
+
+                    // change amount to currency format (XAF for FCFA)
+                    total_dues = new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(total_dues);
+
+                    total_contributions = new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(total_contributions);
+
+                    // Set new marker popup content
+                    marker_object.company_marker._popup.setContent(
+                        `<h6>${response.company[0].company_name}</h6>
+                         Secteur d'activité: <b>${response.sector[0].sector_name}</b><br><br>
+                         Année: <b>${year}</b><br><br>
+                         Trimestre: <b>${text_trimester}</b><br><br>
+                         Cotisations:<b>${total_contributions}</b><br><br>
+                         Paiement: <b>${total_dues}</b>`
+                    )
+                },
+                error: function(response) {
+                    console.log(response)
+                }
+            })
+        }
+
+        function selectCompanyOnMap(company_id) {
+            $.each(markers, function(key, value) {
+                if(company_id == "all") {
+                    map.addLayer(value.company_marker)
+                } else {
+                    if (parseInt(value.company_id) != parseInt(company_id) && map.hasLayer(value.company_marker)) {
+                        map.removeLayer(value.company_marker)
+                    } else if (parseInt(value.company_id) == parseInt(company_id) && !map.hasLayer(value.company_marker)) {
+                        map.addLayer(value.company_marker)
+                    }
+                }
+
+            })
+        }
+
+
+
+        search_company_select.addEventListener("change", function(){
+            let company_id = this.value
+            selectCompanyOnMap(company_id)
+        })
+
+        search_year_select.addEventListener("change", function(){
+            let year_value = this.value
+            initTrimesterSelect(year_value)
+        })
+
+        let search_trimester_select = document.getElementById("search_trimester_select")
+        search_trimester_select.addEventListener("change", function(){
+            let trimester_value = this.value
+            $.each(markers, function(key, value) {
+                updateCompanyMarkerPerTrimester(value)
+            })
+        })
+    </script>
+{% endblock scripts %}
+

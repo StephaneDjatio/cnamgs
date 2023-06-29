@@ -1,0 +1,67 @@
+{% extends 'layout2.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div class="text-center">
+        <img src="{% static 'assets/img/cnamgs.jpeg' %}" height="100" alt="CNAMGS Logo"
+             loading="lazy" />
+      </div>
+      <div class="text-center">
+        <h5 class="card-title"><b>Detail du controle</b></h5>
+      </div>
+      <hr>
+      <br>
+      <div>
+        <table id="detailTable" class="table">
+          <tr>
+            <td>Entreprise : </td>
+            <td><strong>{{ inspection.company.company_name }}</strong></td>
+          </tr>
+          <tr>
+            <td>Secteur d'activité : </td>
+            <td><b>{{ inspection.company.sector.sector_name }} </b></td>
+          </tr>
+          <tr>
+            <td>Ville : </td>
+            <td><b>{{ inspection.company.city.city_name }} </b></td>
+          </tr>
+        </table>
+        <div class="text-center bg-primary text-white">Réponses aux questionnaires</div>
+        <br>
+        <br>
+        <div>
+          {% for answer in answers %}
+          <ol style="font-size: 18px;">
+            <li>
+              {{answer.question.question}}<br><br>
+                {% for listAnswer in answer.question.answer %}
+                  {% if listAnswer.id == answer.answer %}
+                    <input type="radio" name="{{answer.question.id}}" checked>  {{ listAnswer.answer }}<br>
+                  {% else %}
+                    <input type="radio" name="{{answer.question.id}}" disabled>  {{ listAnswer.answer }}<br>
+                  {% endif %}
+                {% endfor %}
+            </li>
+          </ol>
+
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+        $(document).ready(function(){
+
+        })
+
+    </script>
+{% endblock scripts %}

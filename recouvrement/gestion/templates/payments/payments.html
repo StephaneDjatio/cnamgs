@@ -1,0 +1,105 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Liste de paiement</h5>
+        <a href="/payments/add" class="btn btn-primary btn-sm float-end">
+          <span class="fa-solid fa-edit"> </span> Nouveau paiement
+        </a>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        {% for message in messages %}
+        <div class="container-fluid p-0">
+          <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+            {{ message }}
+          </div>
+        </div>
+        {% endfor %}
+        <table id="agentTable" class="table table-bordered">
+          <thead>
+          <tr>
+            <th width="25%">Entreprise</th>
+            <th width="25%">Trimestre</th>
+            <th width="20%">Montant à cotiser</th>
+            <th width="20%">Montant réglé</th>
+            <th width="10%">Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#agentTable',{
+            responsive: true,
+            ajax:{
+              processing: true,
+              url:'{% url "load_payments" %}',
+              dataSrc: "payments",
+            },
+            columns: [
+                    { "data": "company__company_name"},
+                    { 'data': function (data, type, dataToSet) {
+                        console.log(data)
+                        const month = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
+                        var begin_date = new Date(data.trimester__trimester_begin)
+                        begin_date = begin_date.getDate() + ' ' + month[begin_date.getMonth()] + ' ' + begin_date.getFullYear();
+                        var end_date = new Date(data.trimester__trimester_end)
+                        end_date = end_date.getDate() + ' ' + month[end_date.getMonth()] + ' ' + end_date.getFullYear();
+                        return begin_date + " to " + end_date;
+                    } },
+                    { "data": "total"},
+                    { 'data': function (data, type, dataToSet) {
+                        return convertAmountToCurrency(data.total);
+                    } },
+                    { 'data': function (data, type, dataToSet) {
+                        return `<div class="btn-group" role="group" aria-label="Basic example">
+                            <a href="/payments/details/${data.company__id}/${data.trimester__id}" class="btn btn-secondary btn-sm detailPayment"
+                               title="Edit payment"><span class="fa-solid fa-table"> </span> Details</a>
+                          </div>`;
+                    } },
+                ],
+        });
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

@@ -1,0 +1,209 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="card">
+        <div class="card-body">
+            <div>
+                <h5 class="card-title float-start">Générer un rapport</h5>
+            </div>
+            <hr>
+            <br>
+            <div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="company_name" class="form-label">Entreprise</label>
+                        <select id="company_name" class="form-control search-select round">
+                            <option value="all">Tout</option>
+                            {% for company in companies %}
+                                <option value="{{company.id}}">{{company.company_name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="year_select" class="form-label">Année</label>
+                        <select id="year_select" class="form-control search-select round">
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="trimester_select" class="form-label">Trimestre</label>
+                        <select id="trimester_select" class="form-control search-select round">
+                        </select>
+                    </div>
+                    <button type="button" id="search_btn" class="btn btn-primary">Rechercher</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-3">
+        <div class="card-body">
+            <div>
+                <h5 class="card-title text-center">Rapport général</h5>
+                <p class="text-center"><b id="year_selected"></b></p>
+            </div>
+            <br>
+            <hr>
+            <br>
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>Entreprise</th>
+                    <th>Secteur d'activité</th>
+                    <th>Période</th>
+                    <th>Cotisations</th>
+                    <th>Paiement</th>
+                    <th>Etat</th>
+                </tr>
+                </thead>
+                <tbody id="report_content">
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+
+{% block scripts %}
+<script>
+    let company_name = document.getElementById("company_name")
+    let year_select = document.getElementById("year_select")
+    let trimester_select = document.getElementById("trimester_select")
+    let search_btn = document.getElementById("search_btn")
+    let currentYear = new Date().getFullYear()
+    let earliestYear = 2020
+
+    while (currentYear >= earliestYear) {
+        let dateOption = document.createElement("option")
+        dateOption.text = currentYear
+        dateOption.value = currentYear
+        year_select.add(dateOption)
+        currentYear -= 1
+    }
+
+    currentYear = new Date().getFullYear()
+
+    initTrimesterSelect(currentYear)
+
+
+    function initTrimesterSelect(year_value) {
+        const month = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
+        $.ajax({
+            type: "GET",
+            url: "{% url 'getTrimesters' %}",
+            dataType: "json",
+            data: {year_value:year_value},
+            success: function(response) {
+                //console.log(response)
+                if(response.trimesters.length != 0){
+                    let content = "<option value='all'>All</option>"
+                    $.each(response.trimesters, function(key, value) {
+                        var begin_date = new Date(value.trimester_begin)
+                        begin_date = begin_date.getDate() + ' ' + month[begin_date.getMonth()] + ' ' + begin_date.getFullYear();
+                        var end_date = new Date(value.trimester_end)
+                        end_date = end_date.getDate() + ' ' + month[end_date.getMonth()] + ' ' + end_date.getFullYear();
+
+                       content += `<option value=${value.id}>${begin_date} to ${end_date}</option>`
+                    })
+                    trimester_select.innerHTML = content
+                }else {
+                    trimester_select.innerHTML = `<option value="">No trimester defined</option>`
+                }
+            },
+            error: function(response) {
+
+            }
+        })
+    }
+
+    company_name.addEventListener("change", function(){
+        let company_value = this.value
+        if(company_value != "all") {
+            trimester_select.setAttribute("disabled",true)
+        } else {
+            trimester_select.removeAttribute("disabled")
+        }
+    })
+    year_select.addEventListener("change", function(){
+        let year_value = this.value
+        initTrimesterSelect(year_value)
+    })
+
+    search_btn.addEventListener("click", function(){
+        let company = company_name.value
+        let year = year_select.value
+        let trimester = trimester_select.value
+
+        $.ajax({
+            type: "GET",
+            url: "{% url 'search_report_content' %}",
+            dataType: "json",
+            data: {company_id: company, year_value: year, trimester_id: trimester},
+            success: function(response) {
+                console.log(response)
+                let report_content = document.getElementById("report_content")
+                let year_selected = document.getElementById("year_selected")
+                let content = ""
+                year_selected.innerHTML = year_select.value
+                $.each(response.company, function(key, value) {
+                    let total_dues = 0
+                    let total_contributions = 0
+                    let payment_state = "Uncovered"
+                    let payment_state_color = "red"
+                    content += `<tr>
+                                    <td>${value.company_name}</td>
+                                    <td>${value.sector__sector_name}</td>
+                                    <td>${value.sector__sector_name}</td>`;
+
+                    $.each(response.contributions, function(key2, contribution) {
+                        //console.log(contribution)
+                        if(contribution.length != 0 && contribution[0].company_id == value.id) {
+                            $.each(contribution, function(key3, value2) {
+                                total_contributions += value2.total_amount
+                            })
+
+                        }
+                    })
+                    $.each(response.payments, function(key3, payment) {
+                        //console.log(payment)
+                        if(payment.length != 0 && payment[0].company_id == value.id) {
+                            $.each(payment, function(key4, value2) {
+                                total_dues += value2.payment_amount
+                            })
+
+                        }
+                    })
+
+                    if(total_dues == total_contributions) {
+                        payment_state = "Covered"
+                        payment_state_color = "green"
+                    }
+
+                    total_dues = new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(total_dues);
+
+                    total_contributions = new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "XAF"
+                    }).format(total_contributions);
+
+                    content += `<td>${total_contributions}</td>`
+                    content += `<td>${total_dues}</td>`
+                    content += `<td style="background-color:${payment_state_color}; color:white;">${payment_state}</td>
+                              </tr>`
+                })
+                report_content.innerHTML = content
+            }
+        })
+    })
+
+</script>
+{% endblock scripts %}
+

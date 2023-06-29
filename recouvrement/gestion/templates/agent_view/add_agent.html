@@ -1,0 +1,64 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Créer un agent</h5>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        <form method="POST">
+          {% for message in messages %}
+          <div class="container-fluid p-0">
+            <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+              {{ message }}
+            </div>
+          </div>
+          {% endfor %}
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="registration_number" class="form-label">Matricule</label>
+            <input type="text" class="form-control" id="registration_number" name="registration_number" value="{{registration_number}}" readonly required>
+          </div>
+          <div class="mb-3">
+            <label for="firstname" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="firstname" name="firstname" required>
+          </div>
+          <div class="mb-3">
+            <label for="lastname" class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="lastname" name="lastname">
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="text" class="form-control" id="email" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label for="phone_number" class="form-label">Numéro de téléphone</label>
+            <input type="text" class="form-control" id="phone_number" name="phone_number" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+
+</script>
+{% endblock scripts %}
+
