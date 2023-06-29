@@ -1,0 +1,86 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="card">
+        <div class="card-body">
+            <div>
+                <h5 class="card-title float-start">Liste des contrôles</h5>
+            </div>
+            <br>
+            <hr>
+            <br>
+            <div>
+                <table id="inspectionTable" class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th width="15%">Ordre de mission</th>
+                        <th width="15%">Date de contrôle</th>
+                        <th width="15%">Etat du contrôle</th>
+                        <th width="20%">Entreprise</th>
+                        <th width="20%">Agent</th>
+                        <th width="10%">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-center">
+                        {% for inspection in inspections %}
+                            <tr>
+                                <td>{{ inspection.mission }}</td>
+                                <td>{{ inspection.inspection_date }}</td>
+                                {% if inspection.is_completed %}
+                                    <td class="text-center"><span class="badge rounded-pill bg-success">Completed</span></td>
+                                {% else %}
+                                    <td class="text-center"><span class="badge rounded-pill bg-danger">Uncompleted</span></td>
+                                {% endif %}
+                                <td>{{ inspection.company }}</td>
+                                <td>{{ inspection.agent }}</td>
+                                <td>
+                                    <div class="btn-group" role="group" aria-label="Basic example">
+                                        <a href="/inspections/{{inspection.id}}" class="btn btn-primary btn-sm detailInspection" data-id={{inspection.id}} title="Detail of Inspection"><span class="fa-solid fa-eye"></span></a>
+                                        <a href="#" class="btn btn-danger btn-sm deleteInspection" data-id="{{inspection.id}}" title="Delete inspection"><span class="fa-solid fa-trash"></span></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#inspectionTable',{
+            responsive: true
+        });
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

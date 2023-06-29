@@ -1,0 +1,273 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Nouveau paiement</h5>
+      </div>
+      <br>
+      <hr>
+      <br>
+      {% if msg %} {% autoescape off %} {{ msg }} {% endautoescape %} {% endif %}
+      <div class="mb-2" id="msg"></div>
+      <div>
+        <form id="savePayment" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="payment_number" class="form-label">Reférence de paiement</label>
+            <input type="text" class="form-control" id="payment_number" name="payment_number" value="{{payment_number}}" readonly required>
+          </div>
+          <div class="mb-3">
+            <label for="company_selected" class="form-label">Entreprise</label>
+            <select class="form-control" name="company_selected" id="company_selected" required>
+              {% for company in companies %}
+              <option value={{company.id}}>{{company.company_name}}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="year_selected" class="form-label">Année</label>
+            <select class="form-control" name="year_selected" id="year_selected" required>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="trimester_selected" class="form-label">Trimestre</label>
+            <select class="form-control" name="trimester_selected" id="trimester_selected" required>
+              {% for trimester in trimesters %}
+              <option value={{trimester.id}}>{{trimester.trimester_begin}} to {{trimester.trimester_end}}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="payment_date" class="form-label">Date de paiement</label>
+            <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+          </div>
+          <div class="mb-3">
+            <label for="contribution_amount" class="form-label">Total cotisations</label>
+            <input type="text" class="form-control" id="contribution_amount" name="contribution_amount" value="0" readonly required>
+            <i class="text-danger">Reste à payer: <span id="balance_amount">0</span></i>
+          </div>
+          <div class="mb-3">
+            <label for="payment_amount" class="form-label">Montant versé</label>
+            <input type="text" class="form-control" id="payment_amount" name="payment_amount" value="0" required>
+            <i class="text-danger" id="payment_error" style="display:none;">Montant saisi est supérieur à la cotisation</i>
+          </div>
+          <div class="mb-3">
+            <label for="file_payment" class="form-label">Fichiers justificatifs</label>
+            <input type="file" class="form-control" id="file_payment" name="file_payment" multiple required>
+          </div>
+          <button type="submit" id="submitFrmBtn" class="btn btn-primary">Soumettre</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+  let currentYear = new Date().getFullYear()
+  let earliestYear = 2020
+  let search_year_select = document.getElementById("year_selected")
+  let company_selected = document.getElementById("company_selected")
+  let trimester_selected = document.getElementById("trimester_selected")
+  let contribution_amount = document.getElementById("contribution_amount")
+  let payment_amount = document.getElementById("payment_amount")
+  let balance_amount = document.getElementById("balance_amount")
+  let payment_number = document.getElementById("payment_number")
+  let payment_date = document.getElementById("payment_date")
+  let file_payment = document.getElementById("file_payment")
+  let savePayment = document.getElementById("savePayment")
+  let submitFrmBtn = document.getElementById("submitFrmBtn")
+
+
+  while (currentYear >= earliestYear) {
+      let dateOption = document.createElement("option")
+      dateOption.text = currentYear
+      dateOption.value = currentYear
+      search_year_select.add(dateOption)
+      currentYear -= 1
+  }
+
+  selectUnsolveTrimestersPerYear()
+
+  function selectUnsolveTrimestersPerYear() {
+    const month = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
+    let year_value = search_year_select.value
+    $.ajax({
+      type: "GET",
+      url: "{% url 'getTrimestersUnsolvePerYear' %}",
+      dataType: "json",
+      data: {year_value:year_value, company_id:company_selected.value},
+      success: function(response) {
+          // console.log(response)
+          let total_contribution = 0
+          let total_payments = 0
+          if(response.length != 0){
+              let content = "<option value='all'>All</option>"
+              $.each(response, function(key, value) {
+                  var begin_date = new Date(value.trimester_begin)
+                  begin_date = begin_date.getDate() + ' ' + month[begin_date.getMonth()] + ' ' + begin_date.getFullYear();
+                  var end_date = new Date(value.trimester_end)
+                  end_date = end_date.getDate() + ' ' + month[end_date.getMonth()] + ' ' + end_date.getFullYear();
+
+                  content += `<option value=${value.id}>${begin_date} to ${end_date}</option>`
+                  if(value.contribution.length != 0) {
+                    $.each(value.contribution, function( key1, value1) {
+                      total_contribution += value1.total_amount
+                    })
+                  }
+                  if(value.payment.length != 0) {
+                    $.each(value.payment, function( key2, value2) {
+                      total_payments += value2.payment_amount
+                    })
+                  }
+              })
+              trimester_selected.innerHTML = content
+              contribution_amount.value = convertAmountToCurrency(total_contribution)
+              let balance = total_contribution - total_payments
+              balance_amount.innerHTML = convertAmountToCurrency(balance)
+          }else {
+              trimester_selected.innerHTML = `<option value="">No trimester defined</option>`
+              contribution_amount.value = convertAmountToCurrency(total_contribution)
+              let balance = total_contribution - total_payments
+              balance_amount.innerHTML = convertAmountToCurrency(balance)
+          }
+      },
+      error: function(response) {
+
+      }
+    })
+  }
+
+  function selectTrimesterContributionPayment() {
+    let trimester_id = trimester_selected.value
+    let company_id = company_selected.value
+    $.ajax({
+      type: "GET",
+      url: "{% url 'selectTrimesterContributionPayment' %}",
+      dataType: "json",
+      data: {trimester_id:trimester_id, company_id:company_id},
+      success: function(response) {
+          // console.log(response)
+          let total_contribution = 0
+          let total_payments = 0
+          if(response[0].contribution.length != 0) {
+            $.each(response[0].contribution, function( key1, value1) {
+              total_contribution += value1.total_amount
+            })
+          }
+          if(response[0].payment.length != 0) {
+            $.each(response[0].payment, function( key2, value2) {
+              total_payments += value2.payment_amount
+            })
+          }
+          contribution_amount.value = convertAmountToCurrency(total_contribution)
+          let balance = total_contribution - total_payments
+          balance_amount.innerHTML = convertAmountToCurrency(balance)
+      },
+      error: function(response) {
+
+      }
+    })
+  }
+
+  search_year_select.addEventListener("change", function(){
+      selectUnsolveTrimestersPerYear()
+  })
+
+  company_selected.addEventListener("change", function(){
+      selectUnsolveTrimestersPerYear()
+  })
+
+  trimester_selected.addEventListener("change", function(){
+      selectTrimesterContributionPayment()
+  })
+
+  payment_amount.addEventListener("focus", function(e){
+    if(payment_amount.value == 0) {
+      payment_amount.value = ""
+    } else {
+      payment_amount.value = parseLocaleNumber(payment_amount.value, "fr")
+    }
+
+  })
+
+  payment_amount.addEventListener("blur", function(e){
+    let word = /[0-9]/
+    let payment_error = document.getElementById("payment_error")
+    if(payment_amount.value > parseLocaleNumber(contribution_amount.value, "fr")) {
+      payment_error.style.display = "block"
+      payment_amount.value = convertAmountToCurrency(payment_amount.value)
+      submitFrmBtn.disabled = true
+    } else {
+      payment_error.style.display = "none"
+      payment_amount.value = convertAmountToCurrency(payment_amount.value)
+      submitFrmBtn.disabled = false
+    }
+  })
+
+  savePayment.addEventListener("submit", function(e){
+    e.preventDefault();
+    let form_data = new FormData()
+    let frmData = $("#savePayment").serializeArray()
+    let data1 = JSON.stringify(frmData)
+    console.log($("input[id^='file_payment']")[0].files)
+    let data = {
+      csrfmiddlewaretoken: "{{ csrf_token }}",
+      action: 'post',
+      payment_number: payment_number.value,
+      company: company_selected.value,
+      trimester: trimester_selected.value,
+      payment_date: payment_date.value,
+      payment_amount: parseLocaleNumber(payment_amount.value)
+    }
+
+    form_data.append("action", "post")
+    form_data.append("csrfmiddlewaretoken", "{{ csrf_token }}")
+    form_data.append("payment_number", payment_number.value)
+    form_data.append("company", company_selected.value)
+    form_data.append("trimester", trimester_selected.value)
+    form_data.append("payment_date", payment_date.value)
+    form_data.append("payment_amount", parseLocaleNumber(payment_amount.value))
+
+    let filesLength = file_payment.files.length
+    for(let i = 0; i < filesLength; i++) {
+      console.log(file_payment.files[i])
+      form_data.append("files[]", file_payment.files[i])
+    }
+    for (var pair of form_data.entries()) {
+        console.log(pair[0] + ', ' + JSON.stringify(pair[1]));
+    }
+
+    $.ajax({
+        type:'POST',
+        url:'{% url "save_payment" %}',
+        processData: false,
+        contentType: false,
+        mimeType: "multipart/form-data",
+        data: form_data,
+        dataType: "json",
+        success:function(json){
+            savePayment.reset();
+            console.log(json)
+            $('#msg').html(json.msg);
+        },
+        error : function(xhr,errmsg,err) {
+            console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+        }
+    });
+
+  })
+</script>
+{% endblock scripts %}
+

@@ -1,0 +1,109 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Liste des utilisateurs</h5>
+        <a href="/users/add" class="btn btn-primary btn-sm float-end">
+          <span class="fa-solid fa-edit"> </span> Créer un utilisateur
+        </a>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        {% for message in messages %}
+        <div class="container-fluid p-0">
+          <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+            {{ message }}
+          </div>
+        </div>
+        {% endfor %}
+        <table id="agentTable" class="table table-bordered">
+          <thead>
+          <tr>
+            <th width="25%">Nom d'utilisateur</th>
+            <th width="25%">Email utilisateur</th>
+            <th width="20%">Nom</th>
+            <th width="20%">Prénom</th>
+            <th width="20%">Rôle</th>
+            <th width="20%">Status</th>
+            <th width="10%">Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#agentTable',{
+            responsive: true,
+            ajax:{
+              processing: true,
+              url:'{% url "get_users" %}',
+              dataSrc: "",
+            },
+            columns: [
+                    { "data": "username"},
+                    { "data": "email"},
+                    { "data": "first_name"},
+                    { "data": "last_name"},
+                    { "data": "role"},
+                    { 'data': function (data, type, dataToSet) {
+                        let status = '<span class="badge rounded-pill bg-danger">Not active</span>'
+                        if(data.is_active){
+                          status = '<span class="badge rounded-pill bg-success">Active</span>'
+                        }
+                        return status;
+                    } },
+                    { 'data': function (data, type, dataToSet) {
+                        return `<div class="btn-group" role="group" aria-label="Basic example">
+                            <a href="#" class="btn btn-primary btn-sm editUser"
+                               title="Edit payment"><span class="fa-solid fa-edit"></span></a>
+                            <a href="#" class="btn btn-success btn-sm viewUser"
+                               title="Edit payment"><span class="fa-solid fa-eye"></span></a>
+                            <a href="#" class="btn btn-danger btn-sm deleteUser"
+                               title="Edit payment"><span class="fa-solid fa-trash"></span></a>
+                          </div>`;
+                    } },
+                ],
+        });
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

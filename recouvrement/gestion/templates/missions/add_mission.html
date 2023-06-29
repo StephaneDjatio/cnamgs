@@ -1,0 +1,78 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="card">
+        <div class="card-body">
+            <div>
+                <h5 class="card-title float-start">Nouvelle mission</h5>
+            </div>
+            <br>
+            <hr>
+            <br>
+            <div>
+                <form method="POST">
+                    {% for message in messages %}
+                    <div class="container-fluid p-0">
+                        <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+                            {{ message }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="order_number" class="form-label">Ordre de mission</label>
+                        <input type="text" class="form-control" id="order_number" name="order_number" value="{{mission_number}}" readonly required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mission_date" class="form-label">Date de mission</label>
+                        <input type="date" class="form-control" id="mission_date" name="mission_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mission_objective" class="form-label">Objectif de la mission</label>
+                        <textarea class="form-control" name="mission_objective" id="mission_objective" cols="30" rows="5" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="companies_selected" class="form-label">Entreprises</label>
+                        <select class="form-control selectpicker" multiple
+                                data-container="body" data-live-search="true" title="Choose companies" data-hide-disabled="true"
+                                data-actions-box="true" data-virtual-scroll="false"  multiple data-max-options="4"
+                                name="companies_selected" id="companies_selected" required>
+                            {% for company in companies %}
+                            <option value={{company.id}}>{{company.company_name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="agents_selected" class="form-label">Agents</label>
+                        <select class="form-control selectpicker" multiple
+                                data-container="body" data-live-search="true" title="Choose agents" data-hide-disabled="true"
+                                data-actions-box="true" data-virtual-scroll="false"  multiple data-max-options="4"
+                                name="agents_selected" id="agents_selected" required>
+                            {% for agent in agents %}
+                                <option value={{agent.id}}>{{agent.firstname}} {{agent.lastname}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Soumettre</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+
+</script>
+{% endblock scripts %}
+

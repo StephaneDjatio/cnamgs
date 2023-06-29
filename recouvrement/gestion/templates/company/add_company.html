@@ -1,0 +1,95 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Nouvelle entreprise</h5>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        <form method="POST">
+          {% if message %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              Data submitted successfully
+            </div>
+          {% endif %}
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="company_name" class="form-label">Nom de l'entreprise</label>
+            <input type="text" class="form-control" id="company_name" name="company_name" required>
+          </div>
+          <div class="mb-3">
+            <label for="sector_name" class="form-label">Secteur d'activité
+              <a class="btn btn-success btn-sm"><span class="fa-solid fa-edit"> </span></a>
+            </label>
+            <select class="form-select" id="sector_name" name="sector_name" required>
+              <option value="">Choisir secteur d'activité</option>
+              {% for sector in sectors %}
+              <option value="{{ sector.id }}">{{ sector.sector_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="city_name" class="form-label">Ville
+              <a class="btn btn-success btn-sm"><span class="fa-solid fa-edit"> </span></a>
+            </label>
+            <select class="form-select" id="city_name" name="city_name" required>
+              <option value="">Choisir une ville</option>
+              {% for city in cities %}
+              <option value="{{ city.id }}">{{ city.city_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <a href="#" id="addLocation" onclick="addLocation()">Ajouter sa localisation</a>
+            <span id="icon_right" class="float-end"><i class="fa-solid fa-plus"></i></span>
+          </div>
+          <div id="locationInputs"></div>
+          <br>
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+  var locationInputsState = false;
+    function addLocation() {
+      if (!locationInputsState) {
+        locationInputsState = true;
+        var icon_remove = `<i class="fa-solid fa-minus"></i>`
+        var location_input = `<div class="mb-3">
+            <label for="latitude" class="form-label">Latitude</label>
+            <input type="number" class="form-control" id="latitude" name="latitude" step="any" required>
+          </div>
+          <div class="mb-3">
+            <label for="longitude" class="form-label">Longitude</label>
+            <input type="number" class="form-control" id="longitude" name="longitude" step="any" required>
+          </div>`;
+
+        document.getElementById("icon_right").innerHTML = icon_remove
+        document.getElementById("locationInputs").innerHTML = location_input
+      } else {
+      locationInputsState = false;
+        var icon_add = `<i class="fa-solid fa-plus"></i>`
+        document.getElementById("icon_right").innerHTML = icon_add
+        document.getElementById("locationInputs").innerHTML = ""
+      }
+    }
+</script>
+{% endblock scripts %}
+

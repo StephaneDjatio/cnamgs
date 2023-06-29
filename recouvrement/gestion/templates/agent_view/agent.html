@@ -1,0 +1,94 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Liste des agents</h5>
+        <a href="/agent/add" class="btn btn-primary btn-sm float-end">
+          <span class="fa-solid fa-edit"> </span> Créer agent
+        </a>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        {% for message in messages %}
+        <div class="container-fluid p-0">
+          <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+            {{ message }}
+          </div>
+        </div>
+        {% endfor %}
+        <table id="agentTable" class="table table-bordered">
+          <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Email</th>
+            <th>Numéro de téléphone</th>
+            <th>Date de creation</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for agent in agents %}
+          <tr>
+            <td>{{ agent.registration_number }}</td>
+            <td>{{ agent.firstname }}</td>
+            <td>{{ agent.lastname }}</td>
+            <td>{{ agent.email }}</td>
+            <td>{{ agent.phone_number }}</td>
+            <td>{{ agent.create_on }}</td>
+            <td>
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <a href="#" class="btn btn-primary btn-sm updateAgent" data-id={{agent.id}} title="Edit agent"><span class="fa-solid fa-edit"></span></a>
+                <a href="#" class="btn btn-success btn-sm updateMarker" data-id="{{agent.id}}" title="Update localization"><span class="fa-solid fa-map-marker"></span></a>
+                <a href="#" class="btn btn-danger btn-sm deleteAgent" data-id="{{agent.id}}" title="Delete agent"><span class="fa-solid fa-trash"></span></a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#agentTable');
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

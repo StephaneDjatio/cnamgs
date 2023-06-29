@@ -1,0 +1,164 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Cotisations</h5>
+        <a href="#" class="btn btn-primary btn-sm float-end addContribution" data-id={{company.id}}>
+          <span class="fa-solid fa-edit"> </span> Nouvelle cotisation
+        </a>
+      </div>
+      <br>
+      <hr>
+      <div>
+        {% for message in messages %}
+        <div class="container-fluid p-0">
+          <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+            {{ message }}
+          </div>
+        </div>
+        {% endfor %}
+        <div class="mb-2 text-center">
+          <h5 class="card-title">{{ company.company_name }}</h5>
+          <h5 class="card-title">{{ company.sector }}</h5>
+          <h5 class="card-title">{{ company.city }}</h5>
+        </div>
+        <table id="companyTable" class="table table-bordered">
+          <thead>
+          <tr>
+            <th>Année</th>
+            <th>Trimestre</th>
+            <th>Montant</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+{% block scripts %}
+<script>
+    var table = new DataTable('#companyTable', {
+      ajax:{
+        processing: true,
+        url:'{% url "get_company_contributions" company_id=company.id %}',
+        dataSrc: "",
+      },
+      columns: [
+          { 'data': function (data, type, dataToSet) {
+              var begin_date = new Date(data.trimester_begin)
+              return begin_date.getFullYear();
+          } },
+          { 'data': function (data, type, dataToSet) {
+              const month = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
+              var begin_date = new Date(data.trimester_begin)
+              begin_date = begin_date.getDate() + ' ' + month[begin_date.getMonth()] + ' ' + begin_date.getFullYear();
+              var end_date = new Date(data.trimester_end)
+              end_date = end_date.getDate() + ' ' + month[end_date.getMonth()] + ' ' + end_date.getFullYear();
+              return begin_date + " to " + end_date;
+          } },
+          { 'data': function (data, type, dataToSet) {
+              if(data.contribution.length != 0) {
+                return convertAmountToCurrency(data.contribution[0].total_amount);
+              } else {
+                return convertAmountToCurrency(0);
+              }
+
+          } },
+          { 'data': function (data, type, dataToSet) {
+              return `<div class="btn-group" role="group" aria-label="Basic example">
+                  <a href="#" class="btn btn-primary btn-sm detailPayment" data-id={{company.id}}>
+                      <span class="fa-solid fa-edit"> </span> Modifier</a>
+                </div>`;
+          } },
+      ],
+    });
+
+    $(document).ready(function(){
+
+        const month = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
+        $('.addContribution').click(function(){
+            company_id = $(this).data("id")
+            // AJAX request
+             $.ajax({
+               url: '{% url "get_company_contributions" company_id=company.id %}',
+               type: 'get',
+               dataType: 'json',
+               success: function(response){
+                  //console.log(response)
+                  let select_trimester = ''
+                  if(response.length != 0) {
+                      $.each(response, function(index, value) {
+                        if(value.contribution.length == 0){
+                          var begin_date = new Date(value.trimester_begin)
+                          begin_date = begin_date.getDate() + ' ' + month[begin_date.getMonth()] + ' ' + begin_date.getFullYear();
+                          var end_date = new Date(value.trimester_end)
+                          end_date = end_date.getDate() + ' ' + month[end_date.getMonth()] + ' ' + end_date.getFullYear();
+                          select_trimester += "<option value='"+value.id+"'>"+ begin_date + " to " + end_date +"</option>"
+                          $('.modal-body #trimester_id').html(select_trimester);
+                        }
+                      });
+                  }else {
+
+                  }
+                  $('.modal-body #contrib_comp_id').val(company_id);
+                  $('.modal-body #company_name1').val('{{ company.company_name }}');
+                  $('#contributionModal').modal('show');
+               }
+             });
+
+        })
+
+        $('.updateCompany').click(function(){
+             company_id = $(this).data("id")
+             // AJAX request
+             $.ajax({
+                   url: '{% url "edit_company" %}',
+                   type: 'get',
+                   data:{company_id:company_id},
+                   dataType: 'json',
+                   success: function(response){
+                        //console.log(response)
+                        var cities;
+                        var sectors;
+                        $.each(response.cities, function(index, value) {
+                          if(value.id == response.company[0].city_id){
+                            cities += "<option value='"+value.id+"' selected>"+value.city_name+"</option>"
+                          }else {
+                            cities += "<option value='"+value.id+"'>"+value.city_name+"</option>"
+                          }
+                        });
+                        $.each(response.sectors, function(index, value) {
+                          if(value.id == response.company[0].sector_id){
+                            sectors += "<option value='"+value.id+"' selected>"+value.sector_name+"</option>"
+                          }else {
+                            sectors += "<option value='"+value.id+"'>"+value.sector_name+"</option>"
+                          }
+                        });
+                        $('.modal-body #id_comp').val(company_id);
+                        $('.modal-body #company_name').val(response.company[0].company_name);
+                        $('.modal-body #city_name').html(cities);
+                        $('.modal-body #sector_name').html(sectors);
+                        $('#companyModal').modal('show');
+                   }
+             });
+        });
+    });
+</script>
+{% endblock scripts %}
+
