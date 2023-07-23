@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.db.models import Sum, Prefetch
-from .models import Trimester, Contribution, Payment, Company, User, City, Sector, Contact
+from .models import Trimester, Contribution, Payment, \
+    Company, User, City, Sector, Contact, AgentProfile, \
+    Agent, AccountantProfile, ManagerProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -88,8 +90,42 @@ class CompanyPaymentTrimesterSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_payments(self, obj):
-        company_payment_query = Payment.objects.filter(company_id=obj.id).\
-            values('trimester__id','trimester__trimester_begin', 'trimester__trimester_end'). \
+        company_payment_query = Payment.objects.filter(company_id=obj.id). \
+            values('trimester__id', 'trimester__trimester_begin', 'trimester__trimester_end'). \
             annotate(total=Sum('payment_amount'))
         serializer = PaymentSerializer(company_payment_query, many=True)
         return serializer.data
+
+
+class AccountantProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = AccountantProfile
+        fields = '__all__'
+
+
+class ManagerProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = ManagerProfile
+        fields = '__all__'
+
+
+class AgentProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = AgentProfile
+        fields = '__all__'
+
+
+class AgentSerializer(serializers.ModelSerializer):
+    agent_profile = AgentProfileSerializer(source="agentprofile_set", many=True)
+    accountant_profile = AccountantProfileSerializer(source="accountantprofile_set", many=True)
+    manager_profile = ManagerProfileSerializer(source="managerprofile_set", many=True)
+
+    class Meta:
+        model = Agent
+        fields = '__all__'

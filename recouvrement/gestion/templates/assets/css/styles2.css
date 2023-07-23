@@ -24,6 +24,7 @@ body{
     height: 100%;
     padding: 20px 0;
     transition: all 0.5s ease;
+    overflow-y: scroll;
 }
 
 
@@ -202,4 +203,9 @@ body.active .wrapper .section{
   background-repeat: no-repeat;
   border-color: green;
   outline: 0;
+}
+
+#chartdiv, #chartdiv2 {
+  width: 100%;
+  height: 300px;
 }

@@ -4,6 +4,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, reverse
 from django.template import loader
 from django.http import JsonResponse
+from django.db import connection
+from django.core.serializers import serialize
+import json
 from django.contrib import messages
 from django.db.models import Sum, Prefetch
 from django.utils.dateparse import parse_date
@@ -12,8 +15,11 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 from .models import Sector, City, Company, Localization, \
     Agent, Payment, Trimester, Contribution, Mission, \
-    AgentAppointedMission, CompanyAppointedMission, PaymentFiles, User, Accountant, Manager, Inspect, ValidAnswer
-from .serializers import TrimesterSerializer, CompanyPaymentTrimesterSerializer, UserSerializer, CompanySerializer
+    AgentAppointedMission, CompanyAppointedMission, PaymentFiles, \
+    User, Accountant, Manager, AgentProfile, Inspect, ValidAnswer, \
+    AgentUser, AccountantProfile, ManagerProfile
+from .serializers import TrimesterSerializer, CompanyPaymentTrimesterSerializer, UserSerializer, CompanySerializer, \
+    AgentSerializer
 from api.serializers import ValidAnswersSerializer, InspectionSerializer
 from .forms import UserRegistrationForm
 
@@ -59,7 +65,9 @@ def index(request):
     sectors = Sector.objects.all()
     template = loader.get_template('index.html')
     return HttpResponse(
-        template.render({'localizations': localizations, 'trimesters': trimesters, 'sectors': sectors, 'companies': companies}, request))
+        template.render(
+            {'localizations': localizations, 'trimesters': trimesters, 'sectors': sectors, 'companies': companies},
+            request))
 
 
 def get_trimesters_view(request):
@@ -100,7 +108,7 @@ def get_company_detail_from_map(request):
         array_trimester_ids.append(trimester['id'])
 
     print(array_trimester_ids)
-    company = Company.objects.filter(id=request.GET["company_id"])\
+    company = Company.objects.filter(id=request.GET["company_id"]) \
         .prefetch_related(
         Prefetch('contribution_set', Contribution.objects.filter(trimester_id__in=array_trimester_ids)),
         Prefetch('payment_set', Payment.objects.filter(trimester_id__in=array_trimester_ids)),
@@ -261,10 +269,15 @@ def selectTrimesterContributionPayment(request):
 
 @login_required(login_url='/')
 def agent_view(request):
-    agents = Agent.objects.all()
+    agent = Agent.objects.prefetch_related(
+        Prefetch('agentprofile_set', AgentProfile.objects.all()),
+        Prefetch('accountantprofile_set', AccountantProfile.objects.all()),
+        Prefetch('managerprofile_set', ManagerProfile.objects.all()),
+    ).all()
+    serializer = AgentSerializer(agent, many=True)
     template = loader.get_template('agent_view/agent.html')
     context = {
-        'agents': agents,
+        'agents': list(serializer.data),
     }
     return HttpResponse(template.render(context, request))
 
@@ -292,6 +305,40 @@ def get_agent(request):
     agent = Agent.objects.filter(id=request.GET["agent_id"]).values()
     data = {
         'agent': list(agent),
+    }
+    return JsonResponse(data)
+
+
+def get_agent_account(request):
+    if request.method == "POST":
+        agent_id = request.POST.get('id_agent')
+        agent_role = request.POST.get('role_user')
+        print(agent_role)
+        username = request.POST.get('username')
+        first_name = request.POST.get('firstname')
+        last_name = request.POST.get('lastname')
+        email = request.POST.get('email')
+        password = '@pass2023!'
+        if agent_role == 'AGENT':
+            AgentUser(username=username, first_name=first_name, last_name=last_name, email=email,
+                      password=make_password(password)).save(agent_id=agent_id)
+        elif agent_role == 'ACCOUNTANT':
+            Accountant(username=username, first_name=first_name, last_name=last_name, email=email,
+                       password=make_password(password)).save(agent_id=agent_id)
+        elif agent_role == 'MANAGER':
+            Manager(username=username, first_name=first_name, last_name=last_name, email=email,
+                    password=make_password(password)).save(agent_id=agent_id)
+        messages.success(request, 'Compte de l\'agent créé avec success.')
+        return redirect(agent_view)
+
+    agent = Agent.objects.filter(id=request.GET["agent_id"]).prefetch_related(
+        Prefetch('agentprofile_set', AgentProfile.objects.filter(agent_id=request.GET["agent_id"]))) \
+        .all()
+    serializer = AgentSerializer(agent, many=True)
+    roles = User.Role
+    data = {
+        'agent': list(serializer.data),
+        'roles': list(roles),
     }
     return JsonResponse(data)
 
@@ -521,6 +568,43 @@ def user_registration_view(request):
     return HttpResponse(template.render({"form": form}, request))
 
 
+@login_required(login_url='/')
 def analyse_view(request):
     template = loader.get_template('reports/analyses.html')
     return HttpResponse(template.render({}, request))
+
+
+def importExport_view(request):
+    template = loader.get_template('configurations/importExport.html')
+    return HttpResponse(template.render({}, request))
+
+
+@login_required(login_url='/')
+def getTotalPaymentsBySector(request):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT public.gestion_sector.id, sector_name, SUM(payment_amount) AS total_amount '
+                       'FROM public.gestion_sector '
+                       'LEFT JOIN public.gestion_company ON public.gestion_company.sector_id = public.gestion_sector.id '
+                       'LEFT JOIN public.gestion_payment ON  public.gestion_payment.company_id = public.gestion_company.id '
+                       'GROUP BY sector_name, public.gestion_sector.id')
+        sector = cursor.fetchall()
+    return JsonResponse(sector, safe=False)
+
+
+@login_required(login_url='/')
+def getTotalContributionsAndPaymentsBySector(request):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT public.gestion_sector.id, sector_name, SUM(payment_amount) AS total_payment, '
+                       'SUM(public.gestion_contribution.total_amount) AS total_contribution '
+                       'FROM public.gestion_sector '
+                       'LEFT JOIN public.gestion_company ON public.gestion_company.sector_id = public.gestion_sector.id '
+                       'LEFT JOIN public.gestion_payment ON  public.gestion_payment.company_id = public.gestion_company.id '
+                       'LEFT JOIN public.gestion_contribution ON  public.gestion_contribution.company_id = public.gestion_company.id '
+                       'LEFT JOIN public.gestion_trimester ON  public.gestion_payment.trimester_id = public.gestion_trimester.id '
+                       'GROUP BY sector_name, public.gestion_sector.id')
+        columns = [column[0] for column in cursor.description]
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+        # sector = cursor.fetchall()
+    return JsonResponse(results, safe=False)

@@ -27,6 +27,7 @@ urlpatterns = [
     path('agents/', views.agent_view, name='agents'),
     path('agent/add/', views.add_agent, name='add_agent'),
     path('agent/edit/', views.get_agent, name='get_agent'),
+    path('agents/account/', views.get_agent_account, name='agent_account'),
     path('agents/update_agent/', views.update_agent, name='update_agent'),
     path('missions/', views.mission_view, name='missions'),
     path('missions/add/', views.add_mission, name='add_mission'),
@@ -41,4 +42,7 @@ urlpatterns = [
     path('reports/', views.report_view, name='reports'),
     path('search_report_content/', views.search_report_content, name='search_report_content'),
     path('analyses/', views.analyse_view, name='analyse_view'),
+    path('import_export/', views.importExport_view, name='import_export'),
+    path('get_payment_per_sector/', views.getTotalPaymentsBySector, name='get_payment_per_sector'),
+    path('get_contribution_payment_per_sector/', views.getTotalContributionsAndPaymentsBySector, name='get_contribution_payment_per_sector'),
 ]

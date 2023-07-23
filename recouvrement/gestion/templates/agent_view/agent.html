@@ -31,11 +31,11 @@
             <th>Prénom</th>
             <th>Email</th>
             <th>Numéro de téléphone</th>
-            <th>Date de creation</th>
+            <th>Etat Compte</th>
             <th>Actions</th>
           </tr>
           </thead>
-          <tbody>
+          <tbody class="text-center">
           {% for agent in agents %}
           <tr>
             <td>{{ agent.registration_number }}</td>
@@ -43,14 +43,24 @@
             <td>{{ agent.lastname }}</td>
             <td>{{ agent.email }}</td>
             <td>{{ agent.phone_number }}</td>
-            <td>{{ agent.create_on }}</td>
+            {% if agent.agent_profile|length != 0 or agent.accountant_profile|length != 0 or agent.manager_profile|length != 0 %}
+            <td><span class="badge bg-success">Compte actif</span></td>
             <td>
               <div class="btn-group" role="group" aria-label="Basic example">
                 <a href="#" class="btn btn-primary btn-sm updateAgent" data-id={{agent.id}} title="Edit agent"><span class="fa-solid fa-edit"></span></a>
-                <a href="#" class="btn btn-success btn-sm updateMarker" data-id="{{agent.id}}" title="Update localization"><span class="fa-solid fa-map-marker"></span></a>
                 <a href="#" class="btn btn-danger btn-sm deleteAgent" data-id="{{agent.id}}" title="Delete agent"><span class="fa-solid fa-trash"></span></a>
               </div>
             </td>
+            {% else %}
+            <td><span class="badge bg-danger">Compte inexistant</span></td>
+            <td>
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <a href="#" class="btn btn-primary btn-sm updateAgent" data-id={{agent.id}} title="Edit agent"><span class="fa-solid fa-edit"></span></a>
+                <a href="#" class="btn btn-success btn-sm createUser" data-id="{{agent.id}}" title="Create agent account"><span class="fa-solid fa-user"></span></a>
+                <a href="#" class="btn btn-danger btn-sm deleteAgent" data-id="{{agent.id}}" title="Delete agent"><span class="fa-solid fa-trash"></span></a>
+              </div>
+            </td>
+            {% endif %}
           </tr>
           {% endfor %}
           </tbody>
@@ -84,6 +94,40 @@
                           $('.modal-body #phone_number').val(response.agent[0].phone_number);
                           $('.modal-body #id_agent').val(agent_id);
                           $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+
+            $('.createUser').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "agent_account" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          let roles = ''
+                          console.log(roles)
+                          for(let i = 0; i < response.roles.length; i++){
+                            if(response.roles[i] != 'ADMIN'){
+                              roles += `<option value=${response.roles[i]}>${response.roles[i]}</option>`
+                            }
+
+                          }
+                          let arrFirstname = response.agent[0].firstname.split(' ')
+                          let arrLastname = response.agent[0].lastname.split(' ')
+                          let username = arrFirstname[0].toLowerCase()+arrLastname[0].toLowerCase()
+                          $('.modal-body #username').val(username);
+                          $('.modal-body #id_agent_user').val(response.agent[0].id);
+                          $('.modal-body #firstname_user').val(response.agent[0].firstname);
+                          $('.modal-body #lastname_user').val(response.agent[0].lastname);
+                          $('.modal-body #email_user').val(response.agent[0].email);
+                          $('.modal-body #phone_number_user').val(response.agent[0].phone_number);
+                          $('.modal-body #role_user').html(roles);
+                          $('#agentAccountModal').modal('show');
                      }
                });
 

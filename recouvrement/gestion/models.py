@@ -1,7 +1,11 @@
+import threading
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+
+# Create a thread-local object to store custom data
+thread_local_data = threading.local()
 
 
 # Create your models here.
@@ -10,6 +14,7 @@ class User(AbstractUser):
         ADMIN = "ADMIN", "Admin"
         ACCOUNTANT = "ACCOUNTANT", "Accountant"
         MANAGER = "MANAGER", "Manager"
+        AGENT = "AGENT", "Agent"
 
     base_role = Role.ADMIN
 
@@ -21,6 +26,18 @@ class User(AbstractUser):
             return super().save(*args, **kwargs)
 
 
+class Agent(models.Model):
+    registration_number = models.CharField(max_length=10)
+    firstname = models.CharField(max_length=150)
+    lastname = models.CharField(max_length=150, null=True)
+    email = models.CharField(max_length=150)
+    phone_number = models.IntegerField(null=True)
+    create_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.firstname
+
+
 class AccountantManager(BaseUserManager):
     def get_queryset(self, *args, **kwargs):
         results = super().get_queryset(*args, **kwargs)
@@ -28,7 +45,6 @@ class AccountantManager(BaseUserManager):
 
 
 class Accountant(User):
-
     base_role = User.Role.ACCOUNTANT
 
     accountant = AccountantManager()
@@ -39,16 +55,26 @@ class Accountant(User):
     def welcome(self):
         return "Only for accountants"
 
+    def save(self, *args, **kwargs):
+        # Do something with the kwargs if needed
+        agent_id = kwargs.pop('agent_id', None)
+
+        # Set custom data in thread-local storage
+        thread_local_data.agent_id = agent_id
+
+        return super(Accountant, self).save(*args, **kwargs)
+
 
 @receiver(post_save, sender=Accountant)
 def create_user_profile(sender, instance, created, **kwargs):
+    agent_id = getattr(thread_local_data, 'agent_id', None)
     if created and instance.role == "ACCOUNTANT":
-        AccountantProfile.objects.create(user=instance)
+        AccountantProfile.objects.create(user=instance, agent_id=agent_id)
 
 
 class AccountantProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    accountant_id = models.IntegerField(null=True, blank=True)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, null=True)
 
 
 class ManagerManager(BaseUserManager):
@@ -58,7 +84,6 @@ class ManagerManager(BaseUserManager):
 
 
 class Manager(User):
-
     base_role = User.Role.MANAGER
 
     manager = ManagerManager()
@@ -69,16 +94,65 @@ class Manager(User):
     def welcome(self):
         return "Only for managers"
 
+    def save(self, *args, **kwargs):
+        # Do something with the kwargs if needed
+        agent_id = kwargs.pop('agent_id', None)
+
+        # Set custom data in thread-local storage
+        thread_local_data.agent_id = agent_id
+
+        return super(Manager, self).save(*args, **kwargs)
+
 
 class ManagerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    manager_id = models.IntegerField(null=True, blank=True)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, null=True)
 
 
 @receiver(post_save, sender=Manager)
 def create_user_profile(sender, instance, created, **kwargs):
+    agent_id = getattr(thread_local_data, 'agent_id', None)
     if created and instance.role == "MANAGER":
-        ManagerProfile.objects.create(user=instance)
+        ManagerProfile.objects.create(user=instance, agent_id=agent_id)
+
+
+class AgentManager(BaseUserManager):
+    def get_queryset(self, *args, **kwargs):
+        results = super().get_queryset(*args, **kwargs)
+        return results.filter(role=User.Role.AGENT)
+
+
+class AgentUser(User):
+    base_role = User.Role.AGENT
+
+    agent = AgentManager()
+
+    class Meta:
+        proxy = True
+
+    def welcome(self):
+        return "Only for agents"
+
+    def save(self, *args, **kwargs):
+        # Do something with the kwargs if needed
+        agent_id = kwargs.pop('agent_id', None)
+
+        # Set custom data in thread-local storage
+        thread_local_data.agent_id = agent_id
+
+        return super(AgentUser, self).save(*args, **kwargs)
+
+
+class AgentProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, null=True)
+
+
+@receiver(post_save, sender=AgentUser)
+def create_user_profile(sender, instance, created, **kwargs):
+    agent_id = getattr(thread_local_data, 'agent_id', None)
+    if created and instance.role == "AGENT":
+        AgentProfile.objects.create(user=instance, agent_id=agent_id)
 
 
 class Sector(models.Model):
@@ -128,7 +202,7 @@ class Contact(models.Model):
     email = models.CharField(max_length=150)
 
     def __str__(self):
-        return self.firstname+' '+self.lastname
+        return self.firstname + ' ' + self.lastname
 
 
 class Company(models.Model):
@@ -158,7 +232,7 @@ class Trimester(models.Model):
     create_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.trimester_begin.strftime('%d/%m/%Y')+' to '+self.trimester_end.strftime('%d/%m/%Y')
+        return self.trimester_begin.strftime('%d/%m/%Y') + ' to ' + self.trimester_end.strftime('%d/%m/%Y')
 
 
 class Contribution(models.Model):
@@ -181,18 +255,6 @@ class PaymentFiles(models.Model):
     filetype = models.CharField(max_length=10, blank=True)
     file = models.FileField(upload_to='%Y/%m/%d')
     create_on = models.DateTimeField(auto_now_add=True)
-
-
-class Agent(models.Model):
-    registration_number = models.CharField(max_length=10)
-    firstname = models.CharField(max_length=150)
-    lastname = models.CharField(max_length=150, null=True)
-    email = models.CharField(max_length=150)
-    phone_number = models.IntegerField(null=True)
-    create_on = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.registration_number
 
 
 class Mission(models.Model):
