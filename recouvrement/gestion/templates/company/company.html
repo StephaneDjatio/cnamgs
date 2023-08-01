@@ -39,7 +39,11 @@
                                 <td>{{ company.company_name }}</td>
                                 <td>{{ company.sector.sector_name }}</td>
                                 <td>{{ company.city.city_name }}</td>
-                                <td>{{ company.create_on }}</td>
+                                {% if company.contact.firstname != null %}
+                                    <td>{{ company.contact.firstname }}</td>
+                                {% else %}
+                                    <td><a href="#" class="addContact" data-id={{company.id}}>Ajouter un responsable</a></td>
+                                {% endif %}
                                 <td>
                                     <div class="btn-group" role="group" aria-label="Basic example">
                                         <a href="#" class="btn btn-primary btn-sm updateCompany" data-id={{company.id}} title="Edit Company"><span class="fa-solid fa-edit"></span></a>
@@ -132,6 +136,12 @@
             company_id = $(this).data("id")
             $('.modal-body #id_compan').val(company_id);
             $('#deleteModal').modal('show');
+        })
+
+        $('.addContact').click(function(){
+            company_id = $(this).data("id")
+            $('.modal-body #id_company_of_contact').val(company_id);
+            $('#companyContactModal').modal('show');
         })
     });
 </script>

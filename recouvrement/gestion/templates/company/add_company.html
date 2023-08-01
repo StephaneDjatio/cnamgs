@@ -28,9 +28,7 @@
                   <input type="text" class="form-control" id="company_name" name="company_name" required>
                 </div>
                 <div class="mb-3">
-                  <label for="sector_name" class="form-label">Secteur d'activité
-                    <a class="btn btn-success btn-sm"><span class="fa-solid fa-edit"> </span></a>
-                  </label>
+                  <label for="sector_name" class="form-label">Secteur d'activité</label>
                   <select class="form-select" id="sector_name" name="sector_name" required>
                     <option value="">Choisir secteur d'activité</option>
                     {% for sector in sectors %}
@@ -39,9 +37,7 @@
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label for="city_name" class="form-label">Ville
-                    <a class="btn btn-success btn-sm"><span class="fa-solid fa-edit"> </span></a>
-                  </label>
+                  <label for="city_name" class="form-label">Ville</label>
                   <select class="form-select" id="city_name" name="city_name" required>
                     <option value="">Choisir une ville</option>
                     {% for city in cities %}

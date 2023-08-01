@@ -115,29 +115,18 @@
         </a>
       </li>
       <li>
-        <a href="#">
+        <a href="#" class="sub-btn">
           <span class="icon"><i class="fas fa-gear"></i></span>
           <span class="item">Configurations</span>
           <span class="fas fa-angle-right dropdown"></span>
         </a>
-      </li>
-      <li>
-        <a href="#">
-          <span class="icon"><i class="fas fa-gear"></i></span>
-          <span class="item">Configurations</span>
-        </a>
-      </li>
-      <li>
-        <a href="#">
-          <span class="icon"><i class="fas fa-gear"></i></span>
-          <span class="item">Configurations</span>
-        </a>
-      </li>
-      <li>
-        <a href="#">
-          <span class="icon"><i class="fas fa-gear"></i></span>
-          <span class="item">Configurations</span>
-        </a>
+        <ul class="submenu">
+          <li><a href="/provinces" class="sub-item">Province</a></li>
+          <li><a href="/departements" class="sub-item">Departement</a></li>
+          <li><a href="/villes" class="sub-item">ville</a></li>
+          <li><a href="/secteurs" class="sub-item">Secteur d'activite</a></li>
+          <li><a href="/questions" class="sub-item">Questionnaires</a></li>
+        </ul>
       </li>
     </ul>
   </div>
@@ -274,6 +263,39 @@
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-danger">Confirmer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal update company contact -->
+<div class="modal fade" id="companyContactModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="companyContactModalLabel">Ajouter un responsable de l'entreprise</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="company-contact/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="text" class="form-control" id="id_company_of_contact" name="id_company" hidden readonly required>
+          <div class="mb-3">
+            <label for="contact_name" class="form-label">Nom du responsable</label>
+            <input type="text" class="form-control" id="contact_name" name="contact_name" required>
+          </div>
+          <div class="mb-3">
+            <label for="contact_email" class="form-label">Email du responsable</label>
+            <input type="email" class="form-control" id="contact_email" name="contact_email" required>
+          </div>
+          <div class="mb-3">
+            <label for="contact_phone" class="form-label">Telephone du responsable</label>
+            <input type="text" class="form-control" id="contact_phone" name="contact_phone" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Valider</button>
         </div>
       </form>
     </div>
@@ -433,10 +455,18 @@
 <script src="//www.amcharts.com/lib/4/themes/animated.js"></script>
 <script src="//www.amcharts.com/lib/4/themes/dataviz.js"></script>
 <script>
+  //jquery for expand and collapse the sidebar
   var hamburger = document.querySelector(".hamburger");
 	hamburger.addEventListener("click", function(){
 		document.querySelector("body").classList.toggle("active");
   })
+
+
+   //jquery for toggle sub menus
+   $('.sub-btn').click(function(){
+     $(this).next('.submenu').slideToggle();
+     $(this).find('.dropdown').toggleClass('rotate');
+   });
 
   function convertAmountToCurrency(amount) {
     return new Intl.NumberFormat("fr-FR", {

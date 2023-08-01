@@ -1,6 +1,20 @@
 from rest_framework.serializers import ModelSerializer
 from gestion.models import Inspect, Mission, Company, Agent, Sector, \
     City, Answer, Question, ValidAnswer
+from django.contrib.auth import authenticate
+from rest_framework.exceptions import ValidationError
+
+
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    ##
+    def check_user(self, clean_data):
+        user = authenticate(username=clean_data['username'], password=clean_data['password'])
+        if not user:
+            raise ValidationError('user not found')
+        return user
 
 
 class CitySerializer(ModelSerializer):
@@ -38,7 +52,7 @@ class MissionSerializer(ModelSerializer):
 
 class InspectionSerializer(ModelSerializer):
     company = CompanySerializer(read_only=True)
-    #agent = AgentSerializer()
+    # agent = AgentSerializer()
     mission = MissionSerializer(read_only=True)
 
     class Meta:
@@ -67,4 +81,3 @@ class ValidAnswersSerializer(ModelSerializer):
     class Meta:
         model = ValidAnswer
         fields = '__all__'
-

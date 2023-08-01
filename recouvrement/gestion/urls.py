@@ -9,16 +9,32 @@ urlpatterns = [
     path('users/', views.user_list_view, name='users'),
     path('get_users/', views.get_users, name='get_users'),
     path('users/add', views.user_registration_view, name='users_add'),
+
+    path('provinces/', views.province_view, name='provinces'),
+    path('provinces/create/', views.province_create, name='provinces_create'),
+
+    path('departements/', views.department_view, name='departements'),
+    path('departements/create/', views.department_create, name='departements_create'),
+
+    path('villes/', views.city_view, name='villes'),
+    path('villes/create/', views.city_create, name='villes_create'),
+
+    path('secteurs/', views.sector_view, name='secteurs'),
+    path('secteurs/create/', views.sector_create, name='secteurs_create'),
+
+    path('questions/', views.question_view, name='questions'),
+    path('questions/create/', views.question_create, name='questions_create'),
+
     path('getTrimesters/', views.get_trimesters_view, name='getTrimesters'),
     path('getTrimestersUnsolvePerYear/', views.getTrimestersUnsolvePerYear, name='getTrimestersUnsolvePerYear'),
     path('selectTrimesterContributionPayment/', views.selectTrimesterContributionPayment, name='selectTrimesterContributionPayment'),
     path('getCompany/', views.get_company_per_year, name='getCompany'),
     path('getCompanyDetail/', views.get_company_detail_from_map, name='getCompanyDetail'),
-    path('sectors/', views.sector_view, name='sectors'),
     path('companies/', views.company_view, name='companies'),
     path('company/add/', views.add_company, name='add_company'),
     path('company/edit/', views.edit_company, name='edit_company'),
     path('companies/delete/', views.delete_company, name='delete_company'),
+    path('companies/company-contact/', views.add_company_contact, name='add_company_contact'),
     path('companies/update_company/', views.update_company, name='update_company'),
     path('companies/updateLocalization/', views.update_localization, name='updateLocalization'),
     path('company/getLocation/', views.get_company_location, name='get_company_location'),

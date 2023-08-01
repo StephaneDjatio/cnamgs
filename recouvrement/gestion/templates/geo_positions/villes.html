@@ -1,0 +1,125 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="card">
+        <div class="card-body">
+            <div>
+                <h5 class="card-title float-start">Liste des villes</h5>
+                <a href="#" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#villeModal">
+                    <span class="fa-solid fa-edit"> </span> Nouvelle ville
+                </a>
+            </div>
+            <br>
+            <hr>
+            <br>
+            <div>
+                {% for message in messages %}
+                <div class="container-fluid p-0">
+                    <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+                        {{ message }}
+                    </div>
+                </div>
+                {% endfor %}
+                <table id="inspectionTable" class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th width="15%">Ville</th>
+                        <th width="15%">Département</th>
+                        <th width="15%">Province</th>
+                        <th width="15%">Date de creation</th>
+                        <th width="10%">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-center">
+                    {% for city in cities %}
+                    <tr>
+                        <td>{{ city.city_name }}</td>
+                        <td>{{ city.department.department_name }}</td>
+                        <td>{{ city.department.province.province_name }}</td>
+                        <td>{{ city.create_on }}</td>
+                        <td>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <a href="/villes/{{city.id}}" class="btn btn-primary btn-sm detailInspection" data-id={{city.id}} title="Detail ville"><span class="fa-solid fa-eye"></span></a>
+                                <a href="#" class="btn btn-danger btn-sm deleteInspection" data-id="{{city.id}}" title="Supprimer ville"><span class="fa-solid fa-trash"></span></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal create province -->
+<div class="modal fade" id="villeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="villeModalLabel">Nouvelle ville</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="create/">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="city" class="form-label">Ville</label>
+                        <input type="text" class="form-control" id="city" name="city" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="departement_id" class="form-label">Département</label>
+                        <select class="form-select" id="departement_id" name="departement_id" required>
+                            <option value="">Choisir département</option>
+                            {% for department in departments %}
+                            <option value="{{ department.id }}">{{ department.department_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#inspectionTable',{
+            responsive: true
+        });
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

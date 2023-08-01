@@ -1,0 +1,121 @@
+{% extends 'layout2.html' %}
+
+
+{% block content %}
+<div class="container-fluid pt-4">
+  <div class="card">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title float-start">Liste des questions</h5>
+        <a href="#" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#sectorModal">
+          <span class="fa-solid fa-edit"> </span> Nouvelle question
+        </a>
+      </div>
+      <br>
+      <hr>
+      <br>
+      <div>
+        {% for message in messages %}
+        <div class="container-fluid p-0">
+          <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+
+            {{ message }}
+          </div>
+        </div>
+        {% endfor %}
+        <table id="inspectionTable" class="table table-bordered">
+          <thead>
+          <tr>
+            <th width="50%">Question</th>
+            <th width="30%">Reponses au choix</th>
+            <th width="20%">Actions</th>
+          </tr>
+          </thead>
+          <tbody class="text-center">
+          {% for question in questions %}
+          <tr>
+            <td>{{ question.question }}</td>
+            <td>
+              <ul style="list-style-type: decimal !important;">
+                {% for answer in answers %}
+                  {% if answer.question == question %}
+                    <li>{{ answer.answer }}</li>
+                  {% endif %}
+
+                {% endfor %}
+              </ul>
+            </td>
+            <td>
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <a href="/questions/{{question.id}}" class="btn btn-primary btn-sm detailInspection" data-id={{question.id}} title="Detail question"><span class="fa-solid fa-eye"></span></a>
+                <a href="#" class="btn btn-danger btn-sm deleteInspection" data-id="{{question.id}}" title="Supprimer question"><span class="fa-solid fa-trash"></span></a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal create province -->
+<div class="modal fade" id="sectorModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="sectorModalLabel">Nouveau Secteur</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="create/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="sector" class="form-label">Secteur</label>
+            <input type="text" class="form-control" id="sector" name="sector" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+
+        var table = new DataTable('#inspectionTable',{
+            responsive: true
+        });
+        $(document).ready(function(){
+            $('.updateAgent').click(function(){
+              agent_id = $(this).data("id")
+              // AJAX request
+               $.ajax({
+                     url: '{% url "get_agent" %}',
+                     type: 'get',
+                     data:{agent_id:agent_id},
+                     dataType: 'json',
+                     success: function(response){
+                          console.log(response)
+                          $('.modal-body #firstname').val(response.agent[0].firstname);
+                          $('.modal-body #lastname').val(response.agent[0].lastname);
+                          $('.modal-body #email').val(response.agent[0].email);
+                          $('.modal-body #phone_number').val(response.agent[0].phone_number);
+                          $('.modal-body #id_agent').val(agent_id);
+                          $('#agentModal').modal('show');
+                     }
+               });
+
+            })
+        })
+
+    </script>
+{% endblock scripts %}

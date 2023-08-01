@@ -17,7 +17,7 @@ from .models import Sector, City, Company, Localization, \
     Agent, Payment, Trimester, Contribution, Mission, \
     AgentAppointedMission, CompanyAppointedMission, PaymentFiles, \
     User, Accountant, Manager, AgentProfile, Inspect, ValidAnswer, \
-    AgentUser, AccountantProfile, ManagerProfile
+    AgentUser, AccountantProfile, ManagerProfile, Contact, Province, Department, Question, Answer
 from .serializers import TrimesterSerializer, CompanyPaymentTrimesterSerializer, UserSerializer, CompanySerializer, \
     AgentSerializer
 from api.serializers import ValidAnswersSerializer, InspectionSerializer
@@ -55,6 +55,86 @@ def logout_user(request):
     logout(request)
     messages.info(request, "Logged out successfully!")
     return redirect(reverse('login_user'))
+
+
+@login_required(login_url='/')
+def province_view(request):
+    provinces = Province.objects.all()
+    template = loader.get_template('geo_positions/provinces.html')
+    return HttpResponse(template.render({'provinces': provinces}, request))
+
+
+@login_required(login_url='/')
+def province_create(request):
+    province_name = request.POST["province"]
+    Province.objects.create(province_name=province_name)
+    messages.success(request, 'Province créée avec success.')
+    return redirect(province_view)
+
+
+@login_required(login_url='/')
+def department_view(request):
+    departements = Department.objects.all()
+    provinces = Province.objects.all()
+    template = loader.get_template('geo_positions/departements.html')
+    return HttpResponse(template.render({'departements': departements, 'provinces': provinces}, request))
+
+
+@login_required(login_url='/')
+def department_create(request):
+    departement_name = request.POST["departement"]
+    province_id = request.POST["province_id"]
+    Department.objects.create(department_name=departement_name, province_id=province_id)
+    messages.success(request, 'Département créée avec success.')
+    return redirect(departement_view)
+
+
+@login_required(login_url='/')
+def city_view(request):
+    cities = City.objects.all()
+    departments = Department.objects.all()
+    template = loader.get_template('geo_positions/villes.html')
+    return HttpResponse(template.render({'cities': cities, 'departments': departments}, request))
+
+
+@login_required(login_url='/')
+def city_create(request):
+    city_name = request.POST["city"]
+    department_id = request.POST["departement_id"]
+    City.objects.create(city_name=city_name, department_id=department_id)
+    messages.success(request, 'Ville créée avec success.')
+    return redirect(city_view)
+
+
+@login_required(login_url='/')
+def sector_view(request):
+    sectors = Sector.objects.all()
+    template = loader.get_template('sectors/sectors.html')
+    return HttpResponse(template.render({'sectors': sectors}, request))
+
+
+@login_required(login_url='/')
+def sector_create(request):
+    sector_name = request.POST["sector"]
+    Sector.objects.create(sector_name=sector_name)
+    messages.success(request, 'Secteur d\'activité créée avec success.')
+    return redirect(sector_view)
+
+
+@login_required(login_url='/')
+def question_view(request):
+    questions = Question.objects.all()
+    answers = Answer.objects.all()
+    template = loader.get_template('questions/questions.html')
+    return HttpResponse(template.render({'questions': questions, 'answers': answers}, request))
+
+
+@login_required(login_url='/')
+def question_create(request):
+    sector_name = request.POST["sector"]
+    Sector.objects.create(sector_name=sector_name)
+    messages.success(request, 'Secteur d\'activité créée avec success.')
+    return redirect(sector_view)
 
 
 @login_required(login_url='/')
@@ -115,11 +195,6 @@ def get_company_detail_from_map(request):
     ).all()
     serializer = CompanySerializer(company, many=True)
     return JsonResponse({"company": serializer.data})
-
-
-@login_required(login_url='/')
-def sector_view(request):
-    return HttpResponse('Hello, welcome to the Sector page.')
 
 
 @login_required(login_url='/')
@@ -187,6 +262,20 @@ def delete_company(request):
     Localization.objects.filter(company=company).delete()
     Company.objects.filter(id=company_id).delete()
     messages.error(request, 'Company deleted successfully.')
+    return redirect(company_view)
+
+
+@login_required(login_url='/')
+def add_company_contact(request):
+    company_id = request.POST["id_company"]
+    contact_name = request.POST["contact_name"]
+    contact_email = request.POST["contact_email"]
+    contact_phone = request.POST["contact_phone"]
+    print(company_id)
+    contact = Contact.objects.create(firstname=contact_name, email=contact_email, phone_number=contact_phone)
+    print(contact)
+    Company.objects.filter(pk=company_id).update(contact=contact)
+    messages.success(request, 'Le responsable d\'entreprise mis a jour avec success.')
     return redirect(company_view)
 
 

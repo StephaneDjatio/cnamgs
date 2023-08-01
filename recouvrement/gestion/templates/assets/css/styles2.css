@@ -99,6 +99,27 @@ body{
     background:grey;
 }
 
+.wrapper .sidebar ul li a .dropdown{
+ position: absolute;
+ right: 15px;
+ top: 15px;
+ margin-left: 10px;
+ transition: 0.3s ease;
+}
+
+.wrapper .sidebar ul li .submenu{
+ background: #262627;
+ display: none;
+}
+
+.wrapper .sidebar ul li .submenu a{
+ padding-left: 80px;
+}
+
+.rotate{
+ transform: rotate(90deg);
+}
+
 /* section top nav */
 .wrapper .section{
     width: calc(100% - 225px);

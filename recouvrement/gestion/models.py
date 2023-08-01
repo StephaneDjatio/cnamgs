@@ -200,9 +200,10 @@ class Contact(models.Model):
     firstname = models.CharField(max_length=150)
     lastname = models.CharField(max_length=150, null=True)
     email = models.CharField(max_length=150)
+    phone_number = models.IntegerField(null=True)
 
     def __str__(self):
-        return self.firstname + ' ' + self.lastname
+        return self.firstname
 
 
 class Company(models.Model):
